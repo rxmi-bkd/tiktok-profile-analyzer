@@ -7,68 +7,40 @@ accounts = {}
 
 
 @app.get("/")
-def get_accounts():
-    result = {}
+def get():
+    response = {}
 
     for account_id, data in accounts.items():
-        result[account_id] = {
+        response[account_id] = {
             "total_slideshow_views": data["total_slideshow_views"],
             "slideshow_count": data["slideshow_count"],
             "last_updated": data["last_updated"]
         }
 
-    return jsonify(result)
+    return jsonify(response)
 
 
 @app.post("/")
-def process_tiktok_response():
+def post():
     items = get_items()
-    now = datetime.now()
 
     for item in items:
-        author_unique_id = get_author_unique_id(item)
-        create_time = get_created_time(item)
-        item_id = get_id(item)
 
-        if author_unique_id is None or create_time is None or item_id is None:
+        if not is_valid_item(item):
             continue
 
-        create_datetime = datetime.fromtimestamp(create_time)
-
-        if create_datetime < now - timedelta(days=30):
+        if is_older_than_30_days(item):
             continue
 
         if is_slide_show(item):
-            views = get_views(item)
+            update_accounts(item)
 
-            if author_unique_id not in accounts:
-                accounts[author_unique_id] = {
-                    "total_slideshow_views": 0,
-                    "slideshow_count": 0,
-                    "seen_items": set(),
-                    "last_updated": now.isoformat()
-                }
-
-            if item_id not in accounts[author_unique_id]["seen_items"]:
-                accounts[author_unique_id]["total_slideshow_views"] += views
-                accounts[author_unique_id]["slideshow_count"] += 1
-                accounts[author_unique_id]["seen_items"].add(item_id)
-
-            accounts[author_unique_id]["last_updated"] = now.isoformat()
-
-    return "ok", 200
+    return None, 200
 
 
 def get_items():
     payload = request.get_json()
     return payload.get("itemList", [])
-
-
-def get_id(item):
-    try:
-        return item.get("id", None)
-    except:
-        return None
 
 
 def get_author_unique_id(item):
@@ -85,11 +57,11 @@ def get_created_time(item):
         return None
 
 
-def is_slide_show(item):
+def get_id(item):
     try:
-        return item.get("imagePost", False)
+        return item.get("id", None)
     except:
-        return False
+        return None
 
 
 def get_views(item):
@@ -99,3 +71,50 @@ def get_views(item):
         return views
     except:
         return 0
+
+
+def is_valid_item(item):
+    author_unique_id = get_author_unique_id(item)
+    create_time = get_created_time(item)
+    item_id = get_id(item)
+
+    if author_unique_id is None or create_time is None or item_id is None:
+        return False
+
+    return True
+
+
+def is_older_than_30_days(item):
+    create_time = get_created_time(item)
+    create_datetime = datetime.fromtimestamp(create_time)
+    return datetime.now() - create_datetime > timedelta(days=30)
+
+
+def is_slide_show(item):
+    try:
+        return item.get("imagePost", False)
+    except:
+        return False
+
+
+def update_accounts(item):
+    views = get_views(item)
+
+    author_unique_id = get_author_unique_id(item)
+
+    if author_unique_id not in accounts:
+        accounts[author_unique_id] = {
+            "total_slideshow_views": 0,
+            "slideshow_count": 0,
+            "seen_items": set(),
+            "last_updated": datetime.now().isoformat()
+        }
+
+    item_id = get_id(item)
+
+    if item_id not in accounts[author_unique_id]["seen_items"]:
+        accounts[author_unique_id]["total_slideshow_views"] += views
+        accounts[author_unique_id]["slideshow_count"] += 1
+        accounts[author_unique_id]["seen_items"].add(item_id)
+
+    accounts[author_unique_id]["last_updated"] = datetime.now().isoformat()
