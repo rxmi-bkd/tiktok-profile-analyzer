@@ -24,14 +24,14 @@ PLAY_COUNT = "playCount"
 IMAGE_POST = "imagePost"
 
 
-@app.get("/")
-def get():
+@app.get("/accounts")
+def read_accounts():
     response = get_accounts(min_views=100000)
     return jsonify(response)
 
 
 @app.post("/")
-def post():
+def process_items():
     items = get_items()
 
     for item in items:
@@ -48,8 +48,8 @@ def post():
     return None, 200
 
 
-@app.post("/save")
-def save():
+@app.post("/accounts")
+def create_accounts():
     response = get_accounts()
 
     with open("accounts.json", "w") as f:
