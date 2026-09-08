@@ -1,3 +1,5 @@
+import json
+
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
 
@@ -8,15 +10,7 @@ accounts = {}
 
 @app.get("/")
 def get():
-    response = {}
-
-    for account_id, data in accounts.items():
-        response[account_id] = {
-            "total_slideshow_views": data["total_slideshow_views"],
-            "slideshow_count": data["slideshow_count"],
-            "last_updated": data["last_updated"]
-        }
-
+    response = get_accounts(min_views=100000)
     return jsonify(response)
 
 
@@ -36,6 +30,30 @@ def post():
             update_accounts(item)
 
     return None, 200
+
+
+@app.post("/save")
+def save():
+    response = get_accounts()
+
+    with open("accounts.json", "w") as f:
+        json.dump(response, f, indent=2)
+
+    return None, 200
+
+
+def get_accounts(min_views=0):
+    response = {}
+
+    for account_id, data in accounts.items():
+        if data["total_slideshow_views"] >= min_views:
+            response[account_id] = {
+                "total_slideshow_views": data["total_slideshow_views"],
+                "slideshow_count": data["slideshow_count"],
+                "last_updated": data["last_updated"]
+            }
+
+    return response
 
 
 def get_items():
