@@ -7,6 +7,22 @@ app = Flask(__name__)
 
 accounts = {}
 
+# Account field constants
+TOTAL_SLIDESHOW_VIEWS = "total_slideshow_views"
+SLIDESHOW_COUNT = "slideshow_count"
+SEEN_ITEMS = "seen_items"
+LAST_UPDATED = "last_updated"
+
+# Item field constants
+ITEM_LIST = "itemList"
+AUTHOR = "author"
+UNIQUE_ID = "uniqueId"
+CREATE_TIME = "createTime"
+ITEM_ID = "id"
+STATS = "stats"
+PLAY_COUNT = "playCount"
+IMAGE_POST = "imagePost"
+
 
 @app.get("/")
 def get():
@@ -46,11 +62,11 @@ def get_accounts(min_views=0):
     response = {}
 
     for account_id, data in accounts.items():
-        if data["total_slideshow_views"] >= min_views:
+        if data[TOTAL_SLIDESHOW_VIEWS] >= min_views:
             response[account_id] = {
-                "total_slideshow_views": data["total_slideshow_views"],
-                "slideshow_count": data["slideshow_count"],
-                "last_updated": data["last_updated"]
+                TOTAL_SLIDESHOW_VIEWS: data[TOTAL_SLIDESHOW_VIEWS],
+                SLIDESHOW_COUNT: data[SLIDESHOW_COUNT],
+                LAST_UPDATED: data[LAST_UPDATED]
             }
 
     return response
@@ -58,34 +74,34 @@ def get_accounts(min_views=0):
 
 def get_items():
     payload = request.get_json()
-    return payload.get("itemList", [])
+    return payload.get(ITEM_LIST, [])
 
 
 def get_author_unique_id(item):
     try:
-        return item.get("author", {}).get("uniqueId", None)
+        return item.get(AUTHOR, {}).get(UNIQUE_ID, None)
     except:
         return None
 
 
 def get_created_time(item):
     try:
-        return item.get("createTime", None)
+        return item.get(CREATE_TIME, None)
     except:
         return None
 
 
 def get_id(item):
     try:
-        return item.get("id", None)
+        return item.get(ITEM_ID, None)
     except:
         return None
 
 
 def get_views(item):
     try:
-        stats = item.get("stats", {})
-        views = stats.get("playCount", 0)
+        stats = item.get(STATS, {})
+        views = stats.get(PLAY_COUNT, 0)
         return views
     except:
         return 0
@@ -110,7 +126,7 @@ def is_older_than_30_days(item):
 
 def is_slide_show(item):
     try:
-        return item.get("imagePost", False)
+        return item.get(IMAGE_POST, False)
     except:
         return False
 
@@ -122,17 +138,17 @@ def update_accounts(item):
 
     if author_unique_id not in accounts:
         accounts[author_unique_id] = {
-            "total_slideshow_views": 0,
-            "slideshow_count": 0,
-            "seen_items": set(),
-            "last_updated": datetime.now().isoformat()
+            TOTAL_SLIDESHOW_VIEWS: 0,
+            SLIDESHOW_COUNT: 0,
+            SEEN_ITEMS: set(),
+            LAST_UPDATED: datetime.now().isoformat()
         }
 
     item_id = get_id(item)
 
-    if item_id not in accounts[author_unique_id]["seen_items"]:
-        accounts[author_unique_id]["total_slideshow_views"] += views
-        accounts[author_unique_id]["slideshow_count"] += 1
-        accounts[author_unique_id]["seen_items"].add(item_id)
+    if item_id not in accounts[author_unique_id][SEEN_ITEMS]:
+        accounts[author_unique_id][TOTAL_SLIDESHOW_VIEWS] += views
+        accounts[author_unique_id][SLIDESHOW_COUNT] += 1
+        accounts[author_unique_id][SEEN_ITEMS].add(item_id)
 
-    accounts[author_unique_id]["last_updated"] = datetime.now().isoformat()
+    accounts[author_unique_id][LAST_UPDATED] = datetime.now().isoformat()
