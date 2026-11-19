@@ -1,4 +1,5 @@
 import json
+import statistics
 
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
@@ -12,6 +13,9 @@ TOTAL_SLIDESHOW_VIEWS = "total_slideshow_views"
 SLIDESHOW_COUNT = "slideshow_count"
 SEEN_ITEMS = "seen_items"
 LAST_UPDATED = "last_updated"
+VIEWS_LIST = "views_list"
+AVERAGE_VIEWS = "average_views"
+MEDIAN_VIEWS = "median_views"
 
 # Item field constants
 ITEM_LIST = "itemList"
@@ -63,9 +67,12 @@ def get_accounts(min_views=0):
 
     for account_id, data in accounts.items():
         if data[TOTAL_SLIDESHOW_VIEWS] >= min_views:
+            views_list = data[VIEWS_LIST]
             response[account_id] = {
                 TOTAL_SLIDESHOW_VIEWS: data[TOTAL_SLIDESHOW_VIEWS],
                 SLIDESHOW_COUNT: data[SLIDESHOW_COUNT],
+                AVERAGE_VIEWS: round(statistics.mean(views_list)) if views_list else 0,
+                MEDIAN_VIEWS: round(statistics.median(views_list)) if views_list else 0,
                 LAST_UPDATED: data[LAST_UPDATED]
             }
 
@@ -141,6 +148,7 @@ def update_accounts(item):
             TOTAL_SLIDESHOW_VIEWS: 0,
             SLIDESHOW_COUNT: 0,
             SEEN_ITEMS: set(),
+            VIEWS_LIST: [],
             LAST_UPDATED: datetime.now().isoformat()
         }
 
@@ -150,5 +158,6 @@ def update_accounts(item):
         accounts[author_unique_id][TOTAL_SLIDESHOW_VIEWS] += views
         accounts[author_unique_id][SLIDESHOW_COUNT] += 1
         accounts[author_unique_id][SEEN_ITEMS].add(item_id)
+        accounts[author_unique_id][VIEWS_LIST].append(views)
 
     accounts[author_unique_id][LAST_UPDATED] = datetime.now().isoformat()
