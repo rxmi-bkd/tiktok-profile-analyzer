@@ -20,6 +20,9 @@ POSTS_PER_WEEK = "posts_per_week"
 CREATE_TIMES = "create_times"
 AVERAGE_INTERVAL_HOURS = "average_interval_hours"
 MEDIAN_INTERVAL_HOURS = "median_interval_hours"
+IMAGE_COUNTS = "image_counts"
+AVERAGE_IMAGES = "average_images"
+MEDIAN_IMAGES = "median_images"
 
 WINDOW_DAYS = 30
 
@@ -32,6 +35,7 @@ ITEM_ID = "id"
 STATS = "stats"
 PLAY_COUNT = "playCount"
 IMAGE_POST = "imagePost"
+IMAGES = "images"
 
 
 @app.get("/accounts")
@@ -75,6 +79,7 @@ def get_accounts(min_views=0):
         if data[TOTAL_SLIDESHOW_VIEWS] >= min_views:
             views_list = data[VIEWS_LIST]
             intervals = get_intervals_hours(data[CREATE_TIMES])
+            image_counts = data[IMAGE_COUNTS]
             response[account_id] = {
                 TOTAL_SLIDESHOW_VIEWS: data[TOTAL_SLIDESHOW_VIEWS],
                 SLIDESHOW_COUNT: data[SLIDESHOW_COUNT],
@@ -83,6 +88,8 @@ def get_accounts(min_views=0):
                 POSTS_PER_WEEK: round(data[SLIDESHOW_COUNT] / WINDOW_DAYS * 7, 1),
                 AVERAGE_INTERVAL_HOURS: round(statistics.mean(intervals), 1) if intervals else None,
                 MEDIAN_INTERVAL_HOURS: round(statistics.median(intervals), 1) if intervals else None,
+                AVERAGE_IMAGES: round(statistics.mean(image_counts), 1) if image_counts else None,
+                MEDIAN_IMAGES: statistics.median(image_counts) if image_counts else None,
                 LAST_UPDATED: data[LAST_UPDATED]
             }
 
@@ -129,6 +136,13 @@ def get_views(item):
         return 0
 
 
+def get_image_count(item):
+    try:
+        return len(item.get(IMAGE_POST, {}).get(IMAGES, []))
+    except:
+        return 0
+
+
 def is_valid_item(item):
     author_unique_id = get_author_unique_id(item)
     create_time = get_created_time(item)
@@ -165,6 +179,7 @@ def update_accounts(item):
             SEEN_ITEMS: set(),
             VIEWS_LIST: [],
             CREATE_TIMES: [],
+            IMAGE_COUNTS: [],
             LAST_UPDATED: datetime.now().isoformat()
         }
 
@@ -176,5 +191,6 @@ def update_accounts(item):
         accounts[author_unique_id][SEEN_ITEMS].add(item_id)
         accounts[author_unique_id][VIEWS_LIST].append(views)
         accounts[author_unique_id][CREATE_TIMES].append(get_created_time(item))
+        accounts[author_unique_id][IMAGE_COUNTS].append(get_image_count(item))
 
     accounts[author_unique_id][LAST_UPDATED] = datetime.now().isoformat()
