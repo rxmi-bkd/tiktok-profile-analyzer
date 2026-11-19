@@ -17,6 +17,9 @@ VIEWS_LIST = "views_list"
 AVERAGE_VIEWS = "average_views"
 MEDIAN_VIEWS = "median_views"
 POSTS_PER_WEEK = "posts_per_week"
+CREATE_TIMES = "create_times"
+AVERAGE_INTERVAL_HOURS = "average_interval_hours"
+MEDIAN_INTERVAL_HOURS = "median_interval_hours"
 
 WINDOW_DAYS = 30
 
@@ -71,16 +74,24 @@ def get_accounts(min_views=0):
     for account_id, data in accounts.items():
         if data[TOTAL_SLIDESHOW_VIEWS] >= min_views:
             views_list = data[VIEWS_LIST]
+            intervals = get_intervals_hours(data[CREATE_TIMES])
             response[account_id] = {
                 TOTAL_SLIDESHOW_VIEWS: data[TOTAL_SLIDESHOW_VIEWS],
                 SLIDESHOW_COUNT: data[SLIDESHOW_COUNT],
                 AVERAGE_VIEWS: round(statistics.mean(views_list)) if views_list else 0,
                 MEDIAN_VIEWS: round(statistics.median(views_list)) if views_list else 0,
                 POSTS_PER_WEEK: round(data[SLIDESHOW_COUNT] / WINDOW_DAYS * 7, 1),
+                AVERAGE_INTERVAL_HOURS: round(statistics.mean(intervals), 1) if intervals else None,
+                MEDIAN_INTERVAL_HOURS: round(statistics.median(intervals), 1) if intervals else None,
                 LAST_UPDATED: data[LAST_UPDATED]
             }
 
     return response
+
+
+def get_intervals_hours(create_times):
+    ordered = sorted(create_times)
+    return [(b - a) / 3600 for a, b in zip(ordered, ordered[1:])]
 
 
 def get_items():
@@ -153,6 +164,7 @@ def update_accounts(item):
             SLIDESHOW_COUNT: 0,
             SEEN_ITEMS: set(),
             VIEWS_LIST: [],
+            CREATE_TIMES: [],
             LAST_UPDATED: datetime.now().isoformat()
         }
 
@@ -163,5 +175,6 @@ def update_accounts(item):
         accounts[author_unique_id][SLIDESHOW_COUNT] += 1
         accounts[author_unique_id][SEEN_ITEMS].add(item_id)
         accounts[author_unique_id][VIEWS_LIST].append(views)
+        accounts[author_unique_id][CREATE_TIMES].append(get_created_time(item))
 
     accounts[author_unique_id][LAST_UPDATED] = datetime.now().isoformat()
