@@ -59,7 +59,7 @@ def process_items():
         if is_slide_show(item):
             update_accounts(item)
 
-    return None, 200
+    return "", 204
 
 
 @app.post("/accounts")
@@ -69,7 +69,7 @@ def create_accounts():
     with open("accounts.json", "w") as f:
         json.dump(response, f, indent=2)
 
-    return None, 200
+    return "", 204
 
 
 def get_accounts(min_views=0):
