@@ -16,6 +16,9 @@ LAST_UPDATED = "last_updated"
 VIEWS_LIST = "views_list"
 AVERAGE_VIEWS = "average_views"
 MEDIAN_VIEWS = "median_views"
+POSTS_PER_WEEK = "posts_per_week"
+
+WINDOW_DAYS = 30
 
 # Item field constants
 ITEM_LIST = "itemList"
@@ -73,6 +76,7 @@ def get_accounts(min_views=0):
                 SLIDESHOW_COUNT: data[SLIDESHOW_COUNT],
                 AVERAGE_VIEWS: round(statistics.mean(views_list)) if views_list else 0,
                 MEDIAN_VIEWS: round(statistics.median(views_list)) if views_list else 0,
+                POSTS_PER_WEEK: round(data[SLIDESHOW_COUNT] / WINDOW_DAYS * 7, 1),
                 LAST_UPDATED: data[LAST_UPDATED]
             }
 
@@ -128,7 +132,7 @@ def is_valid_item(item):
 def is_older_than_30_days(item):
     create_time = get_created_time(item)
     create_datetime = datetime.fromtimestamp(create_time)
-    return datetime.now() - create_datetime > timedelta(days=30)
+    return datetime.now() - create_datetime > timedelta(days=WINDOW_DAYS)
 
 
 def is_slide_show(item):
